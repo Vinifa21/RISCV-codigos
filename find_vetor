@@ -1,0 +1,120 @@
+#Código que inicializa um vetor na memória (usando sp) e 
+# chama a função find42, que deve retornar o índice do primeira key==42 encontrada no vetor (ou -1, caso não encontrada)
+
+
+.data
+	valor_alvo: .word 100
+	tamanho_vetor: .word 3
+	str1: .string "Valor encontrado no índice = "
+	str2: .string "valor não encontrado :( "
+
+
+# a0 = primeiro elemento do vetor
+# a1 = tamanho do vetor
+# a2 = valor-alvo
+# t1 = iterador do meu for de find_valor
+# a0 = volta como retorno da função ( índice do valoor_alvo)
+
+.text
+	addi sp, sp, -20 # aloco 5 espaços na memória
+	
+	mv a0, sp #salvo o endereço do 1° elemento do vetor em a0
+
+	
+	#criando o vetor	#uso t0 como auxiliar, para dar load na memória
+	li, t0, -9
+	sw t0, 0(sp)
+	
+	li t0, 42
+	sw t0, 4(sp)
+	
+	li, t0, 100
+	sw t0, 8(sp)      ### VETOR = (-9,42, 100)
+	
+	
+	# salvo o tamanho do vetor
+	la t0, tamanho_vetor
+	lw a1, 0(t0) 
+	sw a1, 12(sp)
+	
+	#salvo o valor alvo
+	la t0, valor_alvo
+	lw, a2, 0(t0)
+	sw a2, 16(sp)
+	
+	jal find_valor
+	
+	jal print
+
+	# encerro o programa
+	addi sp, sp, 20 #desaloco memória	
+	li a7, 10
+	ecall
+	
+			
+# t1 = i do for
+#t2 = auxiliar p/ percorrer o vetor
+# t3 = endereço atual do vetor
+#t4 = valor atual do vetor
+find_valor:
+	addi sp, sp, -4 #aloco espaço na pilha para o iterador
+	
+	li t1, 0 # i = 0
+	sw t1, 0(sp)
+	
+	for:
+		beq t1, a1, nao_achei #percorre todos os elementos do vetor, se percorrer tudo e não ir para "achei_valor", ele vai para "não_achei"
+		slli t2, t1, 2 # t2 = i * 4
+		add t3, a0, t2 # t3 = endereço atual do vetor (1°adress + i*4)
+		lw t4, 0(t3) #t4 = valor atual do vetor
+		
+		beq t4, a2, achei_valor  # se achar meu valor_alvo
+		#não achei o valor_alvo continuo o loop
+		
+		addi t1, t1, 1 # i++
+		sw, t1, 0(sp)
+		j for
+		
+nao_achei:
+	addi sp, sp, 4 # desaloco pilha
+	li a0, -1
+	ret
+
+	
+
+achei_valor:
+	mv a0, t1 #indice do vetor vai para a0
+	addi sp, sp, 4 # desalovo pilha
+	ret
+	
+	
+	
+print:
+	addi sp, sp, -4
+	sw a0, 0(sp) # aloco memória para guardar o indice (pois usarei a0 para guargdar a str)
+	
+	li, t5, -1
+	
+	beq a0, t5, nao # se a0 == -1 (valor não encontrado) printo outra coisa
+
+	la a0, str1 #"valor encontrado"
+	li, a7, 4
+	ecall
+	
+	lw a0, 0(sp) #pego o valor da memoria e o printo
+	li a7, 1
+	ecall
+	j done
+
+nao:
+	la a0, str2 #"valor não encontrado"
+	li a7, 4
+	ecall
+	lw a0, 0(sp)# recupera "-1" da memória
+
+done:
+	addi sp, sp 4 # desaloco memoria
+	ret
+
+	
+
